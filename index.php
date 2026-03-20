@@ -28,6 +28,7 @@ $config = new OciConfig(
     getenv('OCI_REGION'),
     getenv('OCI_USER_ID'),
     getenv('OCI_TENANCY_ID'),
+    getenv('OCI_COMPARTMENT_ID') ?: getenv('OCI_TENANCY_ID'),
     getenv('OCI_KEY_FINGERPRINT'),
     getenv('OCI_PRIVATE_KEY_FILENAME'),
     getenv('OCI_AVAILABILITY_DOMAIN') ?: null, // null or '' or 'jYtI:PHX-AD-1' or ['jYtI:PHX-AD-1','jYtI:PHX-AD-2']
@@ -65,6 +66,25 @@ $notifier = (function (): \Hitrov\Interfaces\NotifierInterface {
 })();
 
 $shape = getenv('OCI_SHAPE');
+$imageOperatingSystem = getenv('OCI_IMAGE_OPERATING_SYSTEM') ?: 'Oracle Linux';
+$imageOperatingSystemVersion = getenv('OCI_IMAGE_OPERATING_SYSTEM_VERSION') ?: null;
+
+if (empty($bootVolumeId)) {
+    try {
+        $api->validateImage($config);
+    } catch(ApiCallException $e) {
+        try {
+            $image = $api->resolveImage($config, $shape, $imageOperatingSystem, $imageOperatingSystemVersion);
+            $config->imageId = $image['id'];
+            echo "Resolved OCI_IMAGE_ID automatically: {$config->imageId}\n";
+        } catch(ApiCallException $fallbackException) {
+            echo "OCI_IMAGE_ID preflight validation failed. Confirm the secret is a valid image OCID for OCI_REGION.\n";
+            echo $e->getMessage() . "\n";
+            echo $fallbackException->getMessage() . "\n";
+            exit(1);
+        }
+    }
+}
 
 $maxRunningInstancesOfThatShape = 1;
 if (getenv('OCI_MAX_INSTANCES') !== false) {
@@ -111,7 +131,7 @@ foreach ($availabilityDomains as $availabilityDomainEntity) {
         }
 
         // current config is broken
-        return;
+        exit(1);
     }
 
     // success
@@ -123,3 +143,5 @@ foreach ($availabilityDomains as $availabilityDomainEntity) {
 
     return;
 }
+
+exit(1);

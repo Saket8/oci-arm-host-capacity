@@ -16,6 +16,7 @@ trait DefaultConfig
             getenv('OCI_REGION'),
             getenv('OCI_USER_ID'),
             getenv('OCI_TENANCY_ID'),
+            getenv('OCI_COMPARTMENT_ID') ?: getenv('OCI_TENANCY_ID'),
             getenv('OCI_KEY_FINGERPRINT'),
             getenv('OCI_PRIVATE_KEY_FILENAME'),
             getenv('OCI_AVAILABILITY_DOMAIN'),

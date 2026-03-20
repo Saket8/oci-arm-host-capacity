@@ -11,6 +11,7 @@ class OciConfig
     public string $region = '';
     public string $ociUserId = '';
     public string $tenancyId = '';
+    public string $compartmentId = '';
     public string $keyFingerPrint = '';
     public string $privateKeyFilename = '';
 
@@ -31,6 +32,7 @@ class OciConfig
      * @param string $region
      * @param string $ociUserId
      * @param string $tenancyId
+     * @param string $compartmentId
      * @param string $keyFingerPrint
      * @param string $privateKeyFilename
      * @param string|array|null $availabilityDomains
@@ -43,6 +45,7 @@ class OciConfig
         string $region,
         string $ociUserId,
         string $tenancyId,
+        string $compartmentId,
         string $keyFingerPrint,
         string $privateKeyFilename,
         $availabilityDomains,
@@ -52,17 +55,17 @@ class OciConfig
         int $memoryInGBs = 24
     )
     {
-        $this->region = $region;
-        $this->ociUserId = $ociUserId;
-        $this->tenancyId = $tenancyId;
-        $this->keyFingerPrint = $keyFingerPrint;
-        $this->privateKeyFilename = $privateKeyFilename;
-        $this->availabilityDomains = $availabilityDomains;
-        $this->subnetId = $subnetId;
-        $this->imageId = $imageId;
+        $this->region = $this->normalizeScalar($region);
+        $this->ociUserId = $this->normalizeScalar($ociUserId);
+        $this->tenancyId = $this->normalizeScalar($tenancyId);
+        $this->compartmentId = $this->normalizeScalar($compartmentId ?: $tenancyId);
+        $this->keyFingerPrint = $this->normalizeScalar($keyFingerPrint);
+        $this->privateKeyFilename = $this->normalizeScalar($privateKeyFilename);
+        $this->availabilityDomains = $this->normalizeAvailabilityDomains($availabilityDomains);
+        $this->subnetId = $this->normalizeScalar($subnetId);
+        $this->imageId = $this->normalizeScalar($imageId);
         $this->ocpus = $ocups;
         $this->memoryInGBs = $memoryInGBs;
-        $this->imageId = $imageId;
     }
 
     /**
@@ -70,7 +73,7 @@ class OciConfig
      */
     public function setBootVolumeId(string $bootVolumeId): void
     {
-        $this->bootVolumeId = $bootVolumeId;
+        $this->bootVolumeId = $this->normalizeScalar($bootVolumeId);
     }
 
     /**
@@ -116,7 +119,7 @@ class OciConfig
      */
     public function setBootVolumeSizeInGBs(string $bootVolumeSizeInGBs): void
     {
-        $this->bootVolumeSizeInGBs = $bootVolumeSizeInGBs;
+        $this->bootVolumeSizeInGBs = $this->normalizeScalar($bootVolumeSizeInGBs);
     }
 
     /**
@@ -125,5 +128,29 @@ class OciConfig
     public function setSourceDetails(string $sourceDetails): void
     {
         $this->sourceDetails = $sourceDetails;
+    }
+
+    private function normalizeScalar(string $value): string
+    {
+        return trim($value);
+    }
+
+    /**
+     * @param string|array|null $availabilityDomains
+     * @return string|array|null
+     */
+    private function normalizeAvailabilityDomains($availabilityDomains)
+    {
+        if (is_array($availabilityDomains)) {
+            return array_map(function ($availabilityDomain): string {
+                return $this->normalizeScalar((string) $availabilityDomain);
+            }, $availabilityDomains);
+        }
+
+        if ($availabilityDomains === null) {
+            return null;
+        }
+
+        return $this->normalizeScalar((string) $availabilityDomains);
     }
 }
