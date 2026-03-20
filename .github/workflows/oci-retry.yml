@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: composer install --no-dev
 
-      - name: Create .env and key file for ${{ matrix.availability_domain }}
+      - name: Create .env and key file
         env:
           OCI_USER_ID: ${{ secrets.OCI_USER_ID }}
           OCI_TENANCY_ID: ${{ secrets.OCI_TENANCY_ID }}
@@ -39,20 +39,23 @@ jobs:
           OCI_SSH_PUBLIC_KEY: ${{ secrets.OCI_SSH_PUBLIC_KEY }}
           OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
         run: |
-          printf "OCI_USER_ID=%s\n" "$OCI_USER_ID" >> .env
-          printf "OCI_TENANCY_ID=%s\n" "$OCI_TENANCY_ID" >> .env
-          printf "OCI_KEY_FINGERPRINT=%s\n" "$OCI_KEY_FINGERPRINT" >> .env
-          printf "OCI_REGION=%s\n" "$OCI_REGION" >> .env
-          printf "OCI_AVAILABILITY_DOMAIN=%s\n" "${{ matrix.availability_domain }}" >> .env
-          printf "OCI_COMPARTMENT_ID=%s\n" "$OCI_COMPARTMENT_ID" >> .env
-          printf "OCI_SUBNET_ID=%s\n" "$OCI_SUBNET_ID" >> .env
-          printf "OCI_SHAPE=VM.Standard.A1.Flex\n" >> .env
-          printf "OCI_OCPUS=4\n" >> .env
-          printf "OCI_MEMORY_IN_GBS=24\n" >> .env
-          printf "OCI_SSH_PUBLIC_KEY=%s\n" "$OCI_SSH_PUBLIC_KEY" >> .env
-          printf "OCI_PRIVATE_KEY_FILENAME=/tmp/oci_api_key.pem\n" >> .env
-          echo "$OCI_PRIVATE_KEY" > /tmp/oci_api_key.pem
+          cat > .env <<ENVEOF
+          OCI_USER_ID="${OCI_USER_ID}"
+          OCI_TENANCY_ID="${OCI_TENANCY_ID}"
+          OCI_KEY_FINGERPRINT="${OCI_KEY_FINGERPRINT}"
+          OCI_REGION="${OCI_REGION}"
+          OCI_AVAILABILITY_DOMAIN="${{ matrix.availability_domain }}"
+          OCI_COMPARTMENT_ID="${OCI_COMPARTMENT_ID}"
+          OCI_SUBNET_ID="${OCI_SUBNET_ID}"
+          OCI_SHAPE="VM.Standard.A1.Flex"
+          OCI_OCPUS="4"
+          OCI_MEMORY_IN_GBS="24"
+          OCI_SSH_PUBLIC_KEY="${OCI_SSH_PUBLIC_KEY}"
+          OCI_PRIVATE_KEY_FILENAME="/tmp/oci_api_key.pem"
+          ENVEOF
+          sed -i 's/^[[:space:]]*//' .env
+          echo "${OCI_PRIVATE_KEY}" > /tmp/oci_api_key.pem
           chmod 600 /tmp/oci_api_key.pem
 
-      - name: Try creating instance in ${{ matrix.availability_domain }}
+      - name: Run OCI instance creation in ${{ matrix.availability_domain }}
         run: php index.php
