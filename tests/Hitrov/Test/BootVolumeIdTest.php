@@ -8,11 +8,12 @@ use Hitrov\Exception\ApiCallException;
 use Hitrov\OciApi;
 use Hitrov\Test\Traits\DefaultConfig;
 use Hitrov\Test\Traits\LoadEnv;
+use Hitrov\Test\Traits\RequiresOciCredentials;
 use PHPUnit\Framework\TestCase;
 
 class BootVolumeIdTest extends TestCase
 {
-    use DefaultConfig, LoadEnv;
+    use DefaultConfig, LoadEnv, RequiresOciCredentials;
 
     const ENV_FILENAME = '.env.boot_volume_id.test';
 
@@ -22,6 +23,7 @@ class BootVolumeIdTest extends TestCase
     protected function setUp(): void
     {
         $this->loadEnv();
+        $this->requireOciCredentials();
 
         self::$config = $this->getDefaultConfig();
         self::$api = $this->getDefaultApi();

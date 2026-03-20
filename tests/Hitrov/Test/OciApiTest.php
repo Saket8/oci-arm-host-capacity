@@ -9,12 +9,13 @@ use Hitrov\Exception\TooManyRequestsWaiterException;
 use Hitrov\FileCache;
 use Hitrov\OciApi;
 use Hitrov\Test\Traits\DefaultConfig;
+use Hitrov\Test\Traits\RequiresOciCredentials;
 use Hitrov\TooManyRequestsWaiter;
 use PHPUnit\Framework\TestCase;
 
 class OciApiTest extends TestCase
 {
-    use DefaultConfig;
+    use DefaultConfig, RequiresOciCredentials;
 
     const HAVE_INSTANCE = 'Already have an instance';
 
@@ -36,6 +37,8 @@ class OciApiTest extends TestCase
      */
     public function testGetAvailabilityDomains(): void
     {
+        $this->requireOciCredentials();
+
         $availabilityDomains = self::$api->getAvailabilityDomains(self::$config);
 
         $this->assertCount(3, $availabilityDomains);
@@ -49,6 +52,8 @@ class OciApiTest extends TestCase
      */
     public function testGetInstances(): void
     {
+        $this->requireOciCredentials();
+
         self::$instances = self::$api->getInstances(self::$config);
 
         $this->assertNotEmpty(self::$instances);
@@ -200,6 +205,12 @@ class OciApiTest extends TestCase
      */
     public function testCheckExistingInstances(): void
     {
+        $this->requireOciCredentials();
+
+        if (!isset(self::$instances)) {
+            self::$instances = self::$api->getInstances(self::$config);
+        }
+
         $existingInstancesErrorMessage = self::$api->checkExistingInstances(
             self::$config,
             self::$instances,
@@ -215,6 +226,8 @@ class OciApiTest extends TestCase
      */
     public function testCreateInstance(): void
     {
+        $this->requireOciCredentials();
+
         $this->expectException(ApiCallException::class);
         $this->expectExceptionCode(400);
         $this->expectExceptionMessageMatches('/"code": "LimitExceeded",\n\s+"message": "The following service limits were exceeded:.*Request a service limit increase from the service limits page in the console/');
