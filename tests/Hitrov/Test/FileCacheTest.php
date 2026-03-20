@@ -8,8 +8,6 @@ use PHPUnit\Framework\TestCase;
 
 class FileCacheTest extends TestCase
 {
-    const CONFIG_MD5 = '0c4b5682ece1704df5bf11d71fa55177';
-
     use DefaultConfig;
 
     protected function setUp(): void
@@ -27,7 +25,7 @@ class FileCacheTest extends TestCase
         $cache = new FileCache($config);
 
         $this->assertEquals(
-            self::CONFIG_MD5,
+            md5(json_encode($config)),
             $cache->getCacheKey('foo'),
         );
     }
@@ -48,13 +46,14 @@ class FileCacheTest extends TestCase
     {
         $config = $this->getDefaultConfig();
         $cache = new FileCache($config);
+        $cacheKey = $cache->getCacheKey('foo');
 
         $cache->add([1, 'one'], 'foo');
 
         $expected = <<<EOD
 {
     "foo": {
-        "0c4b5682ece1704df5bf11d71fa55177": [
+        "$cacheKey": [
             1,
             "one"
         ]
@@ -72,11 +71,12 @@ EOD;
     {
         $config = $this->getDefaultConfig();
         $cache = new FileCache($config);
+        $cacheKey = $cache->getCacheKey('foo');
 
         $existingCache = <<<EOD
 {
     "foo": {
-        "0c4b5682ece1704df5bf11d71fa55177": [
+        "$cacheKey": [
             1,
             "one"
         ]
@@ -91,13 +91,13 @@ EOD;
         $expected = <<<EOD
 {
     "foo": {
-        "0c4b5682ece1704df5bf11d71fa55177": [
+        "$cacheKey": [
             1,
             "one"
         ]
     },
     "bar": {
-        "0c4b5682ece1704df5bf11d71fa55177": [
+        "$cacheKey": [
             2,
             "two"
         ]
@@ -114,13 +114,16 @@ EOD;
     public function testUpdatesWithDifferentConfig()
     {
         $config = $this->getDefaultConfig();
+        $baseCache = new FileCache($config);
+        $baseCacheKey = $baseCache->getCacheKey('foo');
         $config->bootVolumeId = 'baz';
         $cache = new FileCache($config);
+        $bootVolumeCacheKey = $cache->getCacheKey('foo');
 
         $existingCache = <<<EOD
 {
     "foo": {
-        "0c4b5682ece1704df5bf11d71fa55177": [
+        "$baseCacheKey": [
             1,
             "one"
         ]
@@ -135,11 +138,11 @@ EOD;
         $expected = <<<EOD
 {
     "foo": {
-        "0c4b5682ece1704df5bf11d71fa55177": [
+        "$baseCacheKey": [
             1,
             "one"
         ],
-        "b11f9e5fbe425f149a45af5a9fb40d66": [
+        "$bootVolumeCacheKey": [
             11,
             "eleven"
         ]

@@ -13,14 +13,15 @@ trait DefaultConfig
     public function getDefaultConfig(): OciConfig
     {
         return new OciConfig(
-            getenv('OCI_REGION'),
-            getenv('OCI_USER_ID'),
-            getenv('OCI_TENANCY_ID'),
-            getenv('OCI_KEY_FINGERPRINT'),
-            getenv('OCI_PRIVATE_KEY_FILENAME'),
-            getenv('OCI_AVAILABILITY_DOMAIN'),
-            getenv('OCI_SUBNET_ID'),
-            getenv('OCI_IMAGE_ID'),
+            getenv('OCI_REGION') ?: 'us-ashburn-1',
+            getenv('OCI_USER_ID') ?: 'ocid1.user.oc1..dummy',
+            getenv('OCI_TENANCY_ID') ?: 'ocid1.tenancy.oc1..dummy',
+            getenv('OCI_COMPARTMENT_ID') ?: getenv('OCI_TENANCY_ID') ?: 'ocid1.compartment.oc1..dummy',
+            getenv('OCI_KEY_FINGERPRINT') ?: '00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00',
+            getenv('OCI_PRIVATE_KEY_FILENAME') ?: '/tmp/oci_api_key.pem',
+            getenv('OCI_AVAILABILITY_DOMAIN') ?: 'jYtI:PHX-AD-1',
+            getenv('OCI_SUBNET_ID') ?: 'ocid1.subnet.oc1.phx.dummy',
+            getenv('OCI_IMAGE_ID') ?: 'ocid1.image.oc1.phx.dummy',
             (int) getenv('OCI_OCPUS'),
             (int) getenv('OCI_MEMORY_IN_GBS')
         );
