@@ -8,6 +8,14 @@ on:
 jobs:
   create-instance:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        availability_domain:
+          - "KrkG:US-ASHBURN-AD-1"
+          - "KrkG:US-ASHBURN-AD-2"
+          - "KrkG:US-ASHBURN-AD-3"
+
     steps:
       - uses: actions/checkout@v4
 
@@ -20,13 +28,12 @@ jobs:
       - name: Install dependencies
         run: composer install --no-dev
 
-      - name: Create .env and key file
+      - name: Create .env and key file for ${{ matrix.availability_domain }}
         env:
           OCI_USER_ID: ${{ secrets.OCI_USER_ID }}
           OCI_TENANCY_ID: ${{ secrets.OCI_TENANCY_ID }}
           OCI_KEY_FINGERPRINT: ${{ secrets.OCI_KEY_FINGERPRINT }}
           OCI_REGION: ${{ secrets.OCI_REGION }}
-          OCI_AVAILABILITY_DOMAIN: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}
           OCI_COMPARTMENT_ID: ${{ secrets.OCI_COMPARTMENT_ID }}
           OCI_SUBNET_ID: ${{ secrets.OCI_SUBNET_ID }}
           OCI_SSH_PUBLIC_KEY: ${{ secrets.OCI_SSH_PUBLIC_KEY }}
@@ -36,7 +43,7 @@ jobs:
           printf "OCI_TENANCY_ID=%s\n" "$OCI_TENANCY_ID" >> .env
           printf "OCI_KEY_FINGERPRINT=%s\n" "$OCI_KEY_FINGERPRINT" >> .env
           printf "OCI_REGION=%s\n" "$OCI_REGION" >> .env
-          printf "OCI_AVAILABILITY_DOMAIN=%s\n" "$OCI_AVAILABILITY_DOMAIN" >> .env
+          printf "OCI_AVAILABILITY_DOMAIN=%s\n" "${{ matrix.availability_domain }}" >> .env
           printf "OCI_COMPARTMENT_ID=%s\n" "$OCI_COMPARTMENT_ID" >> .env
           printf "OCI_SUBNET_ID=%s\n" "$OCI_SUBNET_ID" >> .env
           printf "OCI_SHAPE=VM.Standard.A1.Flex\n" >> .env
@@ -47,5 +54,5 @@ jobs:
           echo "$OCI_PRIVATE_KEY" > /tmp/oci_api_key.pem
           chmod 600 /tmp/oci_api_key.pem
 
-      - name: Run OCI instance creation
+      - name: Try creating instance in ${{ matrix.availability_domain }}
         run: php index.php
