@@ -34,6 +34,15 @@ trait DefaultConfig
             $this->getEnvOrDefault('OCI_AVAILABILITY_DOMAIN', self::DEFAULT_AVAILABILITY_DOMAIN),
             $this->getEnvOrDefault('OCI_SUBNET_ID', self::DEFAULT_SUBNET_ID),
             $this->getEnvOrDefault('OCI_IMAGE_ID', self::DEFAULT_IMAGE_ID),
+            getenv('OCI_REGION'),
+            getenv('OCI_USER_ID'),
+            getenv('OCI_TENANCY_ID'),
+            getenv('OCI_COMPARTMENT_ID') ?: getenv('OCI_TENANCY_ID'),
+            getenv('OCI_KEY_FINGERPRINT'),
+            getenv('OCI_PRIVATE_KEY_FILENAME'),
+            getenv('OCI_AVAILABILITY_DOMAIN'),
+            getenv('OCI_SUBNET_ID'),
+            getenv('OCI_IMAGE_ID'),
             (int) getenv('OCI_OCPUS'),
             (int) getenv('OCI_MEMORY_IN_GBS')
         );
