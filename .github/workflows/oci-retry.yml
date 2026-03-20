@@ -19,6 +19,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Show checked-out revision
+        run: |
+          echo "GITHUB_SHA=${GITHUB_SHA}"
+          echo "GITHUB_RUN_ATTEMPT=${GITHUB_RUN_ATTEMPT}"
+          git rev-parse HEAD
+          git show -s --format='%H %s' HEAD
+          if [ "${GITHUB_RUN_ATTEMPT}" != "1" ]; then
+            echo "This is a re-run. GitHub Actions is still executing commit ${GITHUB_SHA}."
+          fi
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -40,20 +50,24 @@ jobs:
           OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
           OCI_IMAGE_ID: ${{ secrets.OCI_IMAGE_ID }}
         run: |
-          echo "OCI_USER_ID=\"${OCI_USER_ID}\"" > .env
-          echo "OCI_TENANCY_ID=\"${OCI_TENANCY_ID}\"" >> .env
-          echo "OCI_KEY_FINGERPRINT=\"${OCI_KEY_FINGERPRINT}\"" >> .env
-          echo "OCI_REGION=\"${OCI_REGION}\"" >> .env
-          echo "OCI_AVAILABILITY_DOMAIN=\"${{ matrix.availability_domain }}\"" >> .env
-          echo "OCI_COMPARTMENT_ID=\"${OCI_COMPARTMENT_ID}\"" >> .env
-          echo "OCI_SUBNET_ID=\"${OCI_SUBNET_ID}\"" >> .env
-          echo "OCI_SHAPE=\"VM.Standard.A1.Flex\"" >> .env
-          echo "OCI_OCPUS=\"4\"" >> .env
-          echo "OCI_MEMORY_IN_GBS=\"24\"" >> .env
-          echo "OCI_SSH_PUBLIC_KEY=\"${OCI_SSH_PUBLIC_KEY}\"" >> .env
-          echo "OCI_IMAGE_ID=\"${OCI_IMAGE_ID}\"" >> .env
-          echo "OCI_PRIVATE_KEY_FILENAME=\"/tmp/oci_api_key.pem\"" >> .env
-          echo "${OCI_PRIVATE_KEY}" > /tmp/oci_api_key.pem
+          set -euo pipefail
+          cat <<EOF > .env
+          OCI_USER_ID="${OCI_USER_ID}"
+          OCI_TENANCY_ID="${OCI_TENANCY_ID}"
+          OCI_KEY_FINGERPRINT="${OCI_KEY_FINGERPRINT}"
+          OCI_REGION="${OCI_REGION}"
+          OCI_AVAILABILITY_DOMAIN="${{ matrix.availability_domain }}"
+          OCI_COMPARTMENT_ID="${OCI_COMPARTMENT_ID}"
+          OCI_SUBNET_ID="${OCI_SUBNET_ID}"
+          OCI_SHAPE="VM.Standard.A1.Flex"
+          OCI_OCPUS="4"
+          OCI_MEMORY_IN_GBS="24"
+          OCI_IMAGE_OPERATING_SYSTEM="Oracle Linux"
+          OCI_SSH_PUBLIC_KEY="${OCI_SSH_PUBLIC_KEY}"
+          OCI_IMAGE_ID="${OCI_IMAGE_ID}"
+          OCI_PRIVATE_KEY_FILENAME="/tmp/oci_api_key.pem"
+          EOF
+          printf '%s' "${OCI_PRIVATE_KEY}" > /tmp/oci_api_key.pem
           chmod 600 /tmp/oci_api_key.pem
 
       - name: Run OCI instance creation in ${{ matrix.availability_domain }}

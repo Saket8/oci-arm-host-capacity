@@ -4,6 +4,7 @@ namespace Hitrov\Test;
 
 use Hitrov\Exception\AvailabilityDomainRequiredException;
 use Hitrov\Exception\BootVolumeSizeException;
+use Hitrov\OciConfig;
 use Hitrov\Test\Traits\DefaultConfig;
 use Hitrov\Test\Traits\LoadEnv;
 use PHPUnit\Framework\TestCase;
@@ -112,5 +113,42 @@ class OciConfigTest extends TestCase
         $this->expectExceptionMessage('OCI_AVAILABILITY_DOMAIN must be specified as string if using OCI_BOOT_VOLUME_ID');
 
         self::$config->getSourceDetails();
+    }
+
+    /**
+     * @covers OciConfig::__construct
+     * @covers OciConfig::setBootVolumeId
+     * @covers OciConfig::setBootVolumeSizeInGBs
+     */
+    public function testConfigValuesAreTrimmed(): void
+    {
+        $config = new OciConfig(
+            " us-ashburn-1 \n",
+            " ocid1.user.oc1..example \n",
+            " ocid1.tenancy.oc1..example \r\n",
+            " ocid1.compartment.oc1..example \r\n",
+            " aa:bb:cc \n",
+            " /tmp/key.pem \n",
+            [" KrkG:US-ASHBURN-AD-1 \n", " KrkG:US-ASHBURN-AD-2 \r\n"],
+            " ocid1.subnet.oc1.iad.example \r\n",
+            " ocid1.image.oc1.iad.example \n",
+            4,
+            24
+        );
+
+        $config->setBootVolumeId(" ocid1.bootvolume.oc1.iad.example \n");
+        $config->setBootVolumeSizeInGBs(" 50 \n");
+
+        $this->assertSame('us-ashburn-1', $config->region);
+        $this->assertSame('ocid1.user.oc1..example', $config->ociUserId);
+        $this->assertSame('ocid1.tenancy.oc1..example', $config->tenancyId);
+        $this->assertSame('ocid1.compartment.oc1..example', $config->compartmentId);
+        $this->assertSame('aa:bb:cc', $config->keyFingerPrint);
+        $this->assertSame('/tmp/key.pem', $config->privateKeyFilename);
+        $this->assertSame(['KrkG:US-ASHBURN-AD-1', 'KrkG:US-ASHBURN-AD-2'], $config->availabilityDomains);
+        $this->assertSame('ocid1.subnet.oc1.iad.example', $config->subnetId);
+        $this->assertSame('ocid1.image.oc1.iad.example', $config->imageId);
+        $this->assertSame('ocid1.bootvolume.oc1.iad.example', $config->bootVolumeId);
+        $this->assertSame('50', $config->bootVolumeSizeInGBs);
     }
 }

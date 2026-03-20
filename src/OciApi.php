@@ -61,7 +61,7 @@ class OciApi
         "ssh_authorized_keys": "$sshKey"
     },
     "shape": "$shape",
-    "compartmentId": "{$config->tenancyId}",
+    "compartmentId": "{$config->compartmentId}",
     "displayName": "$displayName",
     "availabilityDomain": "$availabilityDomain",
     "sourceDetails": {$config->getSourceDetails()},
@@ -127,7 +127,7 @@ EOD;
     public function getInstances(OciConfig $config): array
     {
         $baseUrl = "{$this->getBaseApiUrl($config)}/instances/";
-        $params = ['compartmentId' => $config->tenancyId];
+        $params = ['compartmentId' => $config->compartmentId];
 
         return $this->call($config, $baseUrl, 'GET', null, $params);
     }
@@ -176,7 +176,7 @@ EOD;
 
         if (!$data) {
             $baseUrl = "{$this->getBaseApiUrl($config, 'identity')}/availabilityDomains/";
-            $params = ['compartmentId' => $config->tenancyId];
+            $params = ['compartmentId' => $config->compartmentId];
 
             $data = $this->call($config, $baseUrl, 'GET', null, $params);
             if (getenv('CACHE_AVAILABILITY_DOMAINS') && isset($this->cache)) {
@@ -185,6 +185,117 @@ EOD;
         }
 
         return $data;
+    }
+
+    /**
+     * @param OciConfig $config
+     * @return array
+     *
+     * @throws ApiCallException
+     * @throws JsonException
+     * @throws OCI\Exception\PrivateKeyFileNotFoundException
+     * @throws OCI\Exception\SignerValidateException
+     * @throws OCI\Exception\SigningValidationFailedException
+     * @throws CurlException
+     */
+    public function getImage(OciConfig $config): array
+    {
+        $baseUrl = "{$this->getBaseApiUrl($config)}/images/{$config->imageId}";
+
+        return $this->call($config, $baseUrl);
+    }
+
+    /**
+     * @param OciConfig $config
+     * @return array
+     *
+     * @throws ApiCallException
+     * @throws JsonException
+     * @throws OCI\Exception\PrivateKeyFileNotFoundException
+     * @throws OCI\Exception\SignerValidateException
+     * @throws OCI\Exception\SigningValidationFailedException
+     * @throws CurlException
+     */
+    public function validateImage(OciConfig $config): array
+    {
+        if (strpos($config->imageId, 'ocid1.image.') !== 0) {
+            throw new ApiCallException('OCI_IMAGE_ID must be a valid image OCID starting with ocid1.image.', 400);
+        }
+
+        return $this->getImage($config);
+    }
+
+    /**
+     * @param OciConfig $config
+     * @param string $shape
+     * @param string|null $operatingSystem
+     * @param string|null $operatingSystemVersion
+     * @return array
+     *
+     * @throws ApiCallException
+     * @throws JsonException
+     * @throws OCI\Exception\PrivateKeyFileNotFoundException
+     * @throws OCI\Exception\SignerValidateException
+     * @throws OCI\Exception\SigningValidationFailedException
+     * @throws CurlException
+     */
+    public function listImages(
+        OciConfig $config,
+        string $shape,
+        string $operatingSystem = null,
+        string $operatingSystemVersion = null
+    ): array
+    {
+        $baseUrl = "{$this->getBaseApiUrl($config)}/images/";
+        $params = [
+            'compartmentId' => $config->compartmentId,
+            'shape' => $shape,
+            'lifecycleState' => 'AVAILABLE',
+            'sortBy' => 'TIMECREATED',
+            'sortOrder' => 'DESC',
+        ];
+
+        if (!empty($operatingSystem)) {
+            $params['operatingSystem'] = $operatingSystem;
+        }
+
+        if (!empty($operatingSystemVersion)) {
+            $params['operatingSystemVersion'] = $operatingSystemVersion;
+        }
+
+        return $this->call($config, $baseUrl, 'GET', null, $params);
+    }
+
+    /**
+     * @param OciConfig $config
+     * @param string $shape
+     * @param string|null $operatingSystem
+     * @param string|null $operatingSystemVersion
+     * @return array
+     *
+     * @throws ApiCallException
+     * @throws JsonException
+     * @throws OCI\Exception\PrivateKeyFileNotFoundException
+     * @throws OCI\Exception\SignerValidateException
+     * @throws OCI\Exception\SigningValidationFailedException
+     * @throws CurlException
+     */
+    public function resolveImage(
+        OciConfig $config,
+        string $shape,
+        string $operatingSystem = null,
+        string $operatingSystemVersion = null
+    ): array
+    {
+        $images = $this->listImages($config, $shape, $operatingSystem, $operatingSystemVersion);
+        if (empty($images)) {
+            throw new ApiCallException(
+                'Unable to automatically resolve OCI_IMAGE_ID. No compatible images were returned by ListImages.',
+                404
+            );
+        }
+
+        return $images[0];
     }
 
     /**
